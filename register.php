@@ -83,6 +83,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errorMessage = "There was an error saving your registration. Please try again.";
     }
 }
+
+$stmtCount = $pdo->prepare("
+    SELECT COUNT(*) 
+    FROM event_registrations
+    WHERE agenda = ?
+    AND start_date = CURDATE()
+");
+$stmtCount->execute([$agenda]);
+
+
+$total = $stmtCount->fetchColumn();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -90,6 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Event Registration</title>
+<script>(function(){try{var d=localStorage.getItem('nx_dark');if(d==='false')document.documentElement.classList.add('light');}catch(e){}})();</script>
+<link rel="stylesheet" href="css/public-theme.css">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -419,27 +432,91 @@ body::before {
     .hero { padding: 24px 16px 28px; }
     .hero-logos img { height: 44px; }
 }
+/* FIXED HEADER */
+.top-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 999;
+
+    background: var(--panel);
+    border-bottom: 1px solid var(--border-hi);
+    backdrop-filter: blur(8px);
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 10px 20px;
+}
+
+/* LEFT SIDE */
+.top-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.top-header-left .title {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.top-header-left .subtitle {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+}
+
+/* RIGHT SIDE */
+.top-header-right {
+    display: flex;
+    align-items: center;
+}
+
+/* REMOVE extra spacing from toggle */
+.theme-toggle-wrap {
+    margin: 0;
+}
+
+/* PUSH CONTENT DOWN */
+body {
+    padding-top: 70px;
+}
 </style>
 </head>
 <body>
 
-<!-- ══ HERO ══ -->
-<div class="hero">
-    <div class="hero-inner">
-        <div class="hero-logos">
-            <img src="assets/img/bagong_pilipinas.png" alt="Bagong Pilipinas">
-            <div class="logo-div"></div>
-            <img src="assets/img/pn_seal.png" alt="Philippine Navy Seal">
-        </div>
-        <div class="hero-eyebrow">Official Registration Portal</div>
-        <h1 class="hero-title">PUNONGHIMPILAN HUKBONG DAGAT NG PILIPINAS</h1>
-        <p class="hero-sub">
-            Office of the AC of NS for Naval Systems Engineering, N11<br>
-            Naval Station Jose Andrada, 2335 Roxas Boulevard, Manila
-        </p>
-    </div>
-</div>
+<div class="top-header">
 
+    <!-- LEFT: Branding -->
+    <div class="top-header-left">
+        <img src="assets/img/pn_seal.png" style="height:32px;">
+        <div>
+            <div class="title">Philippine Navy Registration</div>
+            <div class="subtitle">Office of Naval Systems Engineering (N11)</div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Theme Toggle -->
+    <div class="top-header-right">
+        <div class="theme-toggle-wrap">
+            <button type="button" class="theme-toggle" id="theme-toggle-btn"
+                role="switch"
+                onclick="nexusPublicThemeToggle()"
+                aria-checked="true"
+                aria-label="Theme">
+                <span class="theme-toggle-track">
+                    <span class="theme-toggle-thumb">
+                        <i class="fas fa-moon fa-fw" data-theme-icon></i>
+                    </span>
+                </span>
+            </button>
+        </div>
+    </div>
+
+</div>
 <!-- ══ MAIN ══ -->
 <div class="page-wrap">
 
@@ -453,6 +530,7 @@ body::before {
                 <div class="event-meta-item"><i class="fas fa-calendar"></i><?= htmlspecialchars($event_date) ?></div>
                 <div class="event-meta-item"><i class="fas fa-location-dot"></i><?= htmlspecialchars($venue) ?></div>
                 <div class="event-meta-item"><i class="fas fa-clock"></i><?= $totalDays ?> day<?= $totalDays != 1 ? 's' : '' ?></div>
+                <div class="event-meta-item"><i class="fas fa-users"></i><?= $total ?> attendees today</div>
             </div>
         </div>
         <div class="event-banner-badge"><span class="dot"></span> Registration Open</div>
@@ -488,12 +566,16 @@ body::before {
                                 $dayDate = clone $start;
                                 $dayDate->modify('+' . ($i - 1) . ' days');
                                 $dayDate->setTime(0,0,0);
-                                $disabled = ($dayDate < $today) ? 'disabled' : '';
+                                $isToday  = ($dayDate == $today);
+                                $disabled = !$isToday ? 'disabled' : '';
+                                $selected = $isToday ? 'selected' : '';
                             ?>
                             <option value="<?= str_pad($i, 2, '0', STR_PAD_LEFT) ?>"
-                                    data-date="<?= $dayDate->format('Y-m-d') ?>"
-                                    <?= $disabled ?>>
-                                Day <?= str_pad($i, 2, '0', STR_PAD_LEFT) ?> — <?= $dayDate->format('M d, Y') ?>
+                            data-date="<?= $dayDate->format('Y-m-d') ?>"
+                            <?= $disabled ?>
+                            <?= $selected ?>>
+                            Day <?= str_pad($i, 2, '0', STR_PAD_LEFT) ?> — <?= $dayDate->format('M d, Y') ?>
+                            <?= $disabled ? ' (Closed)' : ' (Today)' ?>
                             </option>
                             <?php endfor; ?>
                         </select>
@@ -755,7 +837,24 @@ document.getElementById('event_day').addEventListener('change', function() {
     // Override start_date with the selected attendance day
     document.getElementById('start_date').value = date;
 });
+
+window.addEventListener('DOMContentLoaded', () => {
+    const select = document.getElementById('event_day');
+    const selectedOption = select.options[select.selectedIndex];
+
+    if (selectedOption && selectedOption.dataset.date) {
+        const date = selectedOption.dataset.date;
+        const disp = document.getElementById('eventDateDisplay');
+
+        disp.value = new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+            month: 'long', day: '2-digit', year: 'numeric'
+        });
+
+        document.getElementById('start_date').value = date;
+    }
+});
 </script>
 
+<script src="js/theme-toggle-public.js"></script>
 </body>
 </html>
