@@ -64,11 +64,19 @@ $totalRegistrations = (int)$pdo->query("SELECT COUNT(*) FROM event_registrations
 $recentRegistrations = $pdo->query("
     SELECT
         CONCAT(
-            COALESCE(TRIM(rank),''), ' ',
+            COALESCE(TRIM(`rank`),''), ' ',
             COALESCE(TRIM(first_name),''), ' ',
             COALESCE(TRIM(last_name),''),
-            COALESCE(CONCAT(', ', NULLIF(TRIM(middle_initial),'')), ''),
-            COALESCE(CONCAT(' ', NULLIF(TRIM(ext_name),'')),'')
+            CASE 
+                WHEN TRIM(middle_initial) IS NOT NULL AND TRIM(middle_initial) != '' 
+                THEN CONCAT(', ', TRIM(middle_initial)) 
+                ELSE '' 
+            END,
+            CASE 
+                WHEN TRIM(ext_name) IS NOT NULL AND TRIM(ext_name) != '' 
+                THEN CONCAT(' ', TRIM(ext_name)) 
+                ELSE '' 
+            END
         ) AS fullname,
         unit_office,
         designation,

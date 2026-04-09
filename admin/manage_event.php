@@ -680,7 +680,7 @@ function openQRModal(id, eventData) {
 
         // ── Build the registration URL ──────────────────────────────────
     // Replace with your actual server IP or domain
-    const base = 'http://192.168.1.69:8181/nexus/'; 
+    const base = 'http://192.168.1.21/nexus/'; 
 
     _qrCurrentUrl = `${base}register.php?event_id=${id}`;
 

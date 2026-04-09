@@ -492,7 +492,7 @@ body {
 
     <!-- LEFT: Branding -->
     <div class="top-header-left">
-        <img src="assets/img/pn_seal.png" style="height:32px;">
+        <a href="home.php"><img src="assets/img/pn_seal.png" style="height:32px;"></a>
         <div>
             <div class="title">Philippine Navy Registration</div>
             <div class="subtitle">Office of Naval Systems Engineering (N11)</div>
@@ -502,6 +502,10 @@ body {
     <!-- RIGHT: Theme Toggle -->
     <div class="top-header-right">
         <div class="theme-toggle-wrap">
+            <div class="theme-toggle-hints" aria-hidden="true">
+        <span class="theme-hint-day">Day</span>
+        <span class="theme-hint-night">Night</span>
+    </div>
             <button type="button" class="theme-toggle" id="theme-toggle-btn"
                 role="switch"
                 onclick="nexusPublicThemeToggle()"

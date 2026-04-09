@@ -68,7 +68,7 @@ if (!isset($_nexus_user_loaded)) {
                 'key'    => $key,
                 'icon'   => 'fa-user-plus',
                 'color'  => 'accent',
-                'text'   => 'New admin user <strong>' . htmlspecialchars($row['name'] ?: $row['username']) . '</strong> registered',
+                'text'   => 'New user account for <strong>' . htmlspecialchars($row['name'] ?: $row['username']) . '</strong> created',
                 'time'   => $row['created_at'],
                 'unread' => !in_array($key, $__readKeys),
                 'href'   => 'manage_users.php',
